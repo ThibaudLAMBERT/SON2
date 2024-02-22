@@ -1,0 +1,30 @@
+import("stdfaust.lib");
+
+oneVocoderBand(band,bandsNumb,bwRatio,bandGain,x) = x : fi.resonbp(bandFreq,7,bandGain) with {
+
+
+    baseFreqLow = 50;
+
+    baseFreqHigh = 3000;
+
+
+    bandFreq = ((band/bandsNumb)^2)*5000 + 50;
+
+};
+
+vocoder(nBands,att,rel,BWRatio,source,excitation) = source <: par(i,nBands,oneVocoderBand(i,nBands,BWRatio,1) :
+	an.amp_follower_ar(att,rel) : _,excitation : oneVocoderBand(i,nBands,BWRatio)) :> _,_;
+
+
+
+process = _,no.noise : vocoder(bands,att,rel,BWRatio)
+with{
+    bands = 64;
+    vocoderGroup(x) = vgroup("Vocoder",x);
+    att = vocoderGroup(hslider("[0] Attack [style:knob] [tooltip: Attack time in seconds]",
+    5,0.001,100,0.1)*0.001);
+    rel = vocoderGroup(hslider("[1] Release [style:knob] [tooltip: Release time in seconds]",
+    5,0.001,100,0.1)*0.001);
+    BWRatio = vocoderGroup(hslider("[2] BW [style:knob] [tooltip: Coefficient to adjust the
+    bandwidth of each band]",0.5,0.1,2,0.001));
+};
